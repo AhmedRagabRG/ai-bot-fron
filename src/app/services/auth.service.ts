@@ -7,25 +7,7 @@ import { IUser } from './interfaces/user';
   providedIn: 'root'
 })
 export class AuthService {
-  firebaseAuth = inject(Auth);
-  user$ = user(this.firebaseAuth);
-  currentUserSign = signal<IUser | null | undefined>(undefined);
-  
+  currentUserSig = signal<IUser | null | undefined>(undefined);
+
   constructor() {}
-
-  public register(userData: IUser): Observable<void> {
-    const promise = createUserWithEmailAndPassword(this.firebaseAuth, userData.email!, userData.password!).then(response => {
-      updateProfile(response.user, { displayName: `${userData.firstName} ${userData.lastName}` });
-    }).catch(error => {
-      console.log('Error registering user:', error);
-    });
-
-    return from(promise);
-  }
-
-  public login(email: string, password: string): Observable<void> {
-    const promise = signInWithEmailAndPassword(this.firebaseAuth, email, password).then(() => {})
-    
-    return from(promise);
-  }
 }

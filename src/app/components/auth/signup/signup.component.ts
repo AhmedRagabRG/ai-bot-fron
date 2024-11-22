@@ -11,6 +11,7 @@ import { IUser } from '../../../services/interfaces/user';
 import { AutHeaderComponent } from '../aut-header/aut-header.component';
 import { CommonModule } from '@angular/common';
 import { matchPasswords } from '../../../validators/match-password';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-signup',
@@ -31,16 +32,12 @@ export class SignupComponent {
         Validators.required,
         Validators.minLength(6),
       ]),
-      confirmPassword: new FormControl('', [
-        Validators.required,
-      ]),
-      whereDidYouHearAboutUs: new FormControl(''),
-      firstName: new FormControl('', [Validators.required]),
-      lastName: new FormControl('', [Validators.required]),
-      phoneNumber: new FormControl(''),
-      role: new FormControl(''),
-    },
-    { validators: matchPasswords('password', 'confirmPassword') }
+      // confirmPassword: new FormControl('', [Validators.required]),
+      name: new FormControl('', [Validators.required]),
+      phone: new FormControl('', [Validators.required]),
+      // phoneNumber: new FormControl(''),
+    }
+    // { validators: matchPasswords('password', 'confirmPassword') }
   );
 
   getFormValue(inputName: string) {
@@ -49,43 +46,38 @@ export class SignupComponent {
 
   public errorMsg: string | null = null;
 
-  constructor(public authService: AuthService, private router: Router) {}
-
-  ngOnInit(): void {
-    this.authService.user$.subscribe({
-      next: (user: IUser) => {
-        this.authService.currentUserSign.set(
-          user ? { email: user.email! } : null
-        );
-      },
-    });
-  }
-
   get passwordMismatchError(): boolean {
     return this.signupForm.hasError('passwordsMismatch');
   }
 
-  register(): void {
-    const { email, password, firstName, lastName } = this.signupForm.value;
-    
-    if (this.signupForm.invalid) return;
-    if (!email || !password) return;
-  
-    this.authService
-      .register({
-        email,
-        password,
-        firstName,
-        lastName,
+  constructor(
+    public authService: AuthService,
+    private router: Router,
+    private http: HttpClient
+  ) {}
+
+  ngOnInit(): void {}
+
+  onSubmit(): void {
+    this.http
+      .post<{ user: IUser }>('http://localhost:3000/auth/signup', {
+        email: this.signupForm.value.email,
+        name: this.signupForm.value.name,
+        password: this.signupForm.value.email,
+        phone: this.signupForm.value.phone,
       })
       .subscribe({
-        next: () => {
-          this.router.navigateByUrl('/login');
+        next: (res) => {
+          if (res.user?.access_token) {
+            console.log(res.user)
+            localStorage.setItem('token', res.user.access_token!);
+            this.authService.currentUserSig.set(res.user);
+            this.router.navigateByUrl('/');
+          }
         },
-        error: (error): void => {
-          this.errorMsg = error.code;
+        error: (err) => {
+          console.error(err);
         },
       });
   }
-  
 }

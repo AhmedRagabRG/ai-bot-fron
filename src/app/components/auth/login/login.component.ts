@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { AutHeaderComponent } from '../aut-header/aut-header.component';
 import { SweetAlert2Module } from '@sweetalert2/ngx-sweetalert2';
 import Swal from 'sweetalert2';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -22,26 +23,24 @@ export class LoginComponent {
 
   public errorMsg: string | null = null;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private http: HttpClient,
+  ) {}
 
-  ngOnInit(): void {
-    this.authService.user$.subscribe({
-      next: (user: IUser) => {
-        this.authService.currentUserSign.set(user ? { email: user.email! } : null);
-      },
-    });
-  }
-
-  login(): void {
-    const { email, password } = this.loginForm.value;
-
-    this.authService.login(email, password).subscribe({
-      next: () => {
+  onSubmit(): void {
+    this.http.post<{user: IUser}>('http://localhost:3000/auth/login', {
+      user: this.loginForm.getRawValue(),
+    }).subscribe({
+      next: (res) => {
+        localStorage.setItem('token', res.user.access_token!);
+        this.authService.currentUserSig.set(res.user);
         this.router.navigateByUrl('/dashboard');
       },
-      error: (error): void => {
-        console.log('error');
-      },
-    });
+      error: (err) => {
+        console.error(err)
+      }
+    })
   }
 }
